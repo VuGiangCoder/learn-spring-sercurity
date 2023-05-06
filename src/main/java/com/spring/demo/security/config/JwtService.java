@@ -1,10 +1,12 @@
 package com.spring.demo.security.config;
 
+import com.spring.demo.security.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import java.util.function.Function;
 public class JwtService {
 
     private static final String SECRET_KEY = "67566B58703273357638792F423F4528482B4D6251655468576D5A7133743677";  //all key generator
+    private long jwtExpiration;
+    private long refreshExpiration;
 
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
@@ -70,5 +74,25 @@ public class JwtService {
 
     private Date extractExpired(String token) {
         return extractClaims(token, Claims::getExpiration);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails
+    ) {
+        return buildToken(new HashMap<>(), userDetails, refreshExpiration);
+    }
+
+    private String buildToken(
+            Map<String, Object> extraClaims,
+            UserDetails userDetails,
+            long expiration
+    ) {
+        return Jwts
+                .builder()
+                .setClaims(extraClaims)
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 }
